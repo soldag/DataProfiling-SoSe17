@@ -6,7 +6,7 @@ import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
 import de.metanome.algorithm_integration.algorithm_types.BooleanParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.IntegerParameterAlgorithm;
-import de.metanome.algorithm_integration.algorithm_types.OrderDependencyAlgorithm;
+import de.metanome.algorithm_integration.algorithm_types.UniqueColumnCombinationsAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.RelationalInputParameterAlgorithm;
 import de.metanome.algorithm_integration.algorithm_types.StringParameterAlgorithm;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirement;
@@ -15,10 +15,10 @@ import de.metanome.algorithm_integration.configuration.ConfigurationRequirementI
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementRelationalInput;
 import de.metanome.algorithm_integration.configuration.ConfigurationRequirementString;
 import de.metanome.algorithm_integration.input.RelationalInputGenerator;
-import de.metanome.algorithm_integration.result_receiver.OrderDependencyResultReceiver;
+import de.metanome.algorithm_integration.result_receiver.UniqueColumnCombinationResultReceiver;
 
 public class SUCCESS extends SUCCESSAlgorithm 				// Separating the algorithm implementation and the Metanome interface implementation is good practice
-						  implements OrderDependencyAlgorithm, 			// Defines the type of the algorithm, i.e., the result type, for instance, FunctionalDependencyAlgorithm or InclusionDependencyAlgorithm; implementing multiple types is possible
+						  implements UniqueColumnCombinationsAlgorithm, 			// Defines the type of the algorithm, i.e., the result type, for instance, FunctionalDependencyAlgorithm or InclusionDependencyAlgorithm; implementing multiple types is possible
 						  			 RelationalInputParameterAlgorithm,	// Defines the input type of the algorithm; relational input is any relational input from files or databases; more specific input specifications are possible
 						  			 StringParameterAlgorithm, IntegerParameterAlgorithm, BooleanParameterAlgorithm {	// Types of configuration parameters this algorithm requires; all these are optional
 
@@ -28,12 +28,12 @@ public class SUCCESS extends SUCCESSAlgorithm 				// Separating the algorithm im
 
 	@Override
 	public String getAuthors() {
-		return "Thorsten Papenbrock"; // A string listing the author(s) of this algorithm
+		return "Soeren Oldag, Tamara Slosarek"; // A string listing the author(s) of this algorithm
 	}
 
 	@Override
 	public String getDescription() {
-		return "An example algorithm with no real functionality"; // A string briefly describing what this algorithm does
+		return "An UCC algorithm returning minimal unique column combinations"; // A string briefly describing what this algorithm does
 	}
 	
 	@Override
@@ -98,7 +98,7 @@ public class SUCCESS extends SUCCESSAlgorithm 				// Separating the algorithm im
 	}
 
 	@Override
-	public void setResultReceiver(OrderDependencyResultReceiver resultReceiver) {
+	public void setResultReceiver(UniqueColumnCombinationResultReceiver resultReceiver) {
 		this.resultReceiver = resultReceiver;
 	}
 
