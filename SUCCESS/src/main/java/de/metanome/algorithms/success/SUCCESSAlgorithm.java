@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,16 +29,12 @@ public class SUCCESSAlgorithm {
 	protected String relationName;
 	protected List<String> columnNames;
 	
-	protected String someStringParameter;
-	protected Integer someIntegerParameter;
-	protected Boolean someBooleanParameter;
-	
 	public void execute() throws AlgorithmExecutionException {
 		
 		this.initialize();
 		List<List<String>> records = this.readInput();
 		List<UniqueColumnCombination> results = this.generateResults(records);
-		System.out.print(results);
+		System.out.println(results);
 		this.emit(results);		
 	}
 	
@@ -57,13 +52,7 @@ public class SUCCESSAlgorithm {
 		return records;
 	}
 	
-	protected void print(List<List<String>> records) {
-		// Print parameter
-		System.out.println("Some String: " + this.someStringParameter);
-		System.out.println("Some Integer: " + this.someIntegerParameter);
-		System.out.println("Some Boolean: " + this.someBooleanParameter);
-		System.out.println();
-		
+	protected void print(List<List<String>> records) {		
 		// Print schema
 		System.out.print(this.relationName + "( ");
 		for (String columnName : this.columnNames)
@@ -175,12 +164,6 @@ public class SUCCESSAlgorithm {
 				return newColumns;
 			})
 			.collect(Collectors.toList());
-	}
-
-		
-	protected ColumnIdentifier getRandomColumn() {
-		Random random = new Random(System.currentTimeMillis());
-		return new ColumnIdentifier(this.relationName, this.columnNames.get(random.nextInt(this.columnNames.size())));
 	}
 	
 	protected void emit(List<UniqueColumnCombination> results) throws CouldNotReceiveResultException, ColumnNameMismatchException {
