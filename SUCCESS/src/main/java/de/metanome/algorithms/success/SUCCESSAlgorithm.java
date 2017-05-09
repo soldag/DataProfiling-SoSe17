@@ -82,7 +82,7 @@ public class SUCCESSAlgorithm {
 			Set<String> currentColumns = combinationQueue.pop();
 			
 			// Discard in case of superset of result
-			if (results.stream().anyMatch(result -> this.setContains(currentColumns, result))) {
+			if (results.stream().anyMatch(result -> currentColumns.containsAll(result))) {
 				continue;
 			}
 			
@@ -109,13 +109,6 @@ public class SUCCESSAlgorithm {
 				return ucc;
 			})
 			.collect(Collectors.toList());
-	}
-	
-	private boolean setContains(Set<String> superset, Set<String> set) {
-		int originalSize = superset.size();
-		Set<String> difference = new HashSet<>(superset);
-		difference.removeAll(set);
-		return originalSize > difference.size();
 	}
 	
 	private boolean isUnique(Set<String> columns, List<List<String>> records) {
