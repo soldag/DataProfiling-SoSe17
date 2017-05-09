@@ -4,15 +4,13 @@
 
 SUCCESS (**S**uper **UCC**... w**e** don't know what the re**s**t of the acronym **s**tands for) is an algorithm that finds the minimal unique column combinations (UCCs) of a data set.
 
-It is an **Apriori** approach traversing the regarding lattice and pruning when an UCC is found.
+It is an **Apriori** approach traversing the corresponding lattice and pruning when an UCC is found.
 
 It works with a queue of column combinations that first holds the single columns. While the queue contains combinations, the algorithm extracts the first one and checks its uniqueness.
 
 For the uniqueness-check a **hash** (Java's HashSet implementation) is used. Additionally, since _NULL ≠ NULL_, if a row contains a NULL value in any of the columns of the combination, it is ignored for the check (see below).
 
-If a combination is unique, it is added to the result and nothing more is done. If not, all successors in the lattice are generated and appended to the queue.
-
-For each new combination it is checked, whether it already contains one already detected UCC. If so, the algorithms proceeds to the next combination since the current is not minimal.
+If a combination is an UCC, it is added to the result list and the algorithm proceeds with the next combination in the queue. If not, all successors in the lattice are generated and appended to the queue. For each generated combination it is checked, whether it contains any already detected UCC. In this case the algorithm also proceeds with the next combination since the current one is not minimal.
 
 #### _If you used an algorithm from literature, provide a reference to the according publication._
 
@@ -24,7 +22,7 @@ We started working at this algorithm right when the exercise was published, so w
 
 In retrospective we could have used **Position List Indices** to speed up the uniqueness-check.
 
-#### _If you algorithm implements an adaption or optimization of existing approaches, describe these briefly._
+#### _If your algorithm implements an adaption or optimization of existing approaches, describe these briefly._
 
 ![Nope.](https://media.giphy.com/media/kGCuRgmbnO9EI/giphy.gif)
 
@@ -39,7 +37,7 @@ In retrospective we could have used **Position List Indices** to speed up the un
 
 #### _How long did the discovery take on each dataset and what machine did you use?_
 
-Execution on Metanome with 2048 MB, used macOS Sierra with i5 @ 1.8 GHz. The results are the average run times from five runs.
+Execution on Metanome with 2048 MB, used macOS Sierra with i5 @ 1.8 GHz. The results are the average run times of five runs.
 
 * WDC_planets: **73.2 ms**
 * WDC_satellites: **1,639 ms**
@@ -54,7 +52,7 @@ For comparison, HyUCC performs the task on WDC_planets in 63 ms and WDC_satellit
 
 As far as we understood, _NULL ≠ NULL_ means that all NULL values are unique, which means that a row of a column combination that contains a NULL value automatically is unique.
 
-Our implemenentation (see below) filters out rows containing NULL values before testing its uniqueness with the hash. With _NULL = NULL_ we could skip this filter process but would need to consider all rows for the hashing. The latter would probably be a bit faster but the complexity stays the same.
+Our implemenentation (see below) filters out rows containing NULL values before testing its uniqueness with the hash, which reduces the number of rows that need to be hashed. With _NULL = NULL_ we could skip this filter process but would need to consider all rows for the hashing. The latter would probably be a bit faster but the complexity stays the same.
 
 ```java
 // Put the regarding lines of our records together in one string.
