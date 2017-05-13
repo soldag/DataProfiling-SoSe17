@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import de.metanome.algorithm_integration.AlgorithmConfigurationException;
 import de.metanome.algorithm_integration.AlgorithmExecutionException;
@@ -69,32 +70,33 @@ public class SUCCESSAlgorithm {
 	}
 	
 	protected List<UniqueColumnCombination> generateResults(List<List<String>> records) {
-		List<Set<String>> results = new ArrayList<>();
+		List<List<Integer>> results = new ArrayList<>();
 		
 		// Initialize our working queue with the column names (first layer of the lattice)
-		ArrayDeque<Set<String>> combinationQueue = new ArrayDeque<>(this.columnNames
-				.stream()
-				.map(columnName -> new HashSet<String>(Arrays.asList(columnName)))
+		ArrayDeque<List<Integer>> combinationQueue = new ArrayDeque<>(
+				IntStream.range(0, this.columnNames.size())
+				.boxed()
+				.map(Arrays::asList)
 				.collect(Collectors.toList()));
 		
 		// Iterate over column combinations in the working queue
 		while(combinationQueue.size() > 0) {
-			Set<String> currentColumns = combinationQueue.pop();
+			List<Integer> columnCombination = combinationQueue.pop();
 			
 			// Discard in case of superset of result
-			if (results.stream().anyMatch(result -> currentColumns.containsAll(result))) {
+			if (results.stream().anyMatch(columnCombination::containsAll)) {
 				continue;
 			}
 			
 			// If the current combination is unique, we add it to the result.
 			// From here, we don't need to generate posterior nodes of the lattice because we want to have the minimal UCCs.
-			if (this.isUnique(currentColumns, records)) {
-				results.add(currentColumns);
+			if (this.isUnique(columnCombination, records)) {
+				results.add(columnCombination);
 			
 			// The current combination is not unique, so we generate the posterior nodes of the lattice and add them to the working queue.
 			} else {
-				generatePostCombinations(currentColumns).stream()
-					.forEach(columnCombination -> combinationQueue.add(columnCombination));
+				generatePostCombinations(columnCombination).stream()
+					.forEach(combinationQueue::add);
 			}
 		}
 		
@@ -103,7 +105,7 @@ public class SUCCESSAlgorithm {
 			.map(columnCombination -> {
 				ColumnIdentifier[] columnIdentifiers = columnCombination
 						.stream()
-						.map(columnName -> new ColumnIdentifier(this.relationName, columnName))
+						.map(columnIndex -> new ColumnIdentifier(this.relationName, this.columnNames.get(columnIndex)))
 						.toArray(ColumnIdentifier[]::new);
 				UniqueColumnCombination ucc = new UniqueColumnCombination(new ColumnCombination(columnIdentifiers));
 				return ucc;
@@ -111,12 +113,7 @@ public class SUCCESSAlgorithm {
 			.collect(Collectors.toList());
 	}
 	
-	private boolean isUnique(Set<String> columns, List<List<String>> records) {
-		// First, map the column names to indices to access the right columns in the records
-		List<Integer> columnIndices = columns.stream()
-			.map(columnName -> this.columnNames.indexOf(columnName))
-			.collect(Collectors.toList());
-		
+	private boolean isUnique(List<Integer> columnIndices, List<List<String>> records) {		
 		// Put the regarding lines of our records together in one string.
 		// Filter for rows containing NULL values and ignore them since NULL != NULL.
 		List<String> projectedRecords = records.stream()
@@ -126,7 +123,7 @@ public class SUCCESSAlgorithm {
 				.collect(Collectors.toList());
 		
 		// Store the rows in a hash set. If two values collide, break.
-		HashSet<String> uniqueRows = new HashSet<>(projectedRecords.size());
+		Set<String> uniqueRows = new HashSet<>(projectedRecords.size());
 		for (String row : projectedRecords) {
 			if (!uniqueRows.add(row)) {
 				return false;
@@ -139,22 +136,21 @@ public class SUCCESSAlgorithm {
 	private List<String> projectRow(List<String> row, List<Integer> columnIndices) {
 		return columnIndices
 			.stream()
-			.map(columnIndex -> row.get(columnIndex))
+			.map(row::get)
 			.collect(Collectors.toList());
 	}
 	
-	private List<Set<String>> generatePostCombinations(Set<String> priorColumns) {
+	private List<List<Integer>> generatePostCombinations(List<Integer> priorColumnIndices) {
 		// Generate new column combinations from given node.
 		// Combinations already in the result are handled directly in generateResult().
-		Set<String> remainingColumns = new HashSet<>(this.columnNames);
-		remainingColumns.removeAll(priorColumns);
+		int maxColumnIndex = priorColumnIndices.get(priorColumnIndices.size() - 1);
 		
-		return remainingColumns
-			.stream()
-			.map(columnName -> {
-				Set<String> newColumns = new HashSet<>(priorColumns);
-				newColumns.add(columnName);
-				return newColumns;
+		return IntStream.range(maxColumnIndex + 1, this.columnNames.size())
+			.boxed()
+			.map(columnIndex -> {
+				List<Integer> newColumnIndices = new ArrayList<>(priorColumnIndices);
+				newColumnIndices.add(columnIndex);
+				return newColumnIndices;
 			})
 			.collect(Collectors.toList());
 	}
