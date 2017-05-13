@@ -39,8 +39,8 @@ In retrospective we could have used **Position List Indices** to speed up the un
 
 Execution on Metanome with 2048 MB, used macOS Sierra with i5 @ 1.8 GHz. The results are the average run times of five runs.
 
-* WDC_planets: **73.2 ms**
-* WDC_satellites: **1,639 ms**
+* WDC_planets: **69.8 ms**
+* WDC_satellites: **185.2 ms**
 
 For comparison, HyUCC performs the task on WDC_planets in 63 ms and WDC_satellites in 92 ms.
 
