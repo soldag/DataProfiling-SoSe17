@@ -1,7 +1,9 @@
 # SUCCESS Documentation
 by Sören Oldag & Tamara Slosarek
 
-**_Describe the algorithm’s basic idea. How does the algorithm cope with the complexity of the given task?_**
+&nbsp;
+
+_Describe the algorithm’s basic idea. How does the algorithm cope with the complexity of the given task?_
 
 SUCCESS (**S**uper **UCC**... w**e** don't know what the re**s**t of the acronym **s**tands for) is an algorithm that finds the minimal unique column combinations (UCCs) of a data set.
 
@@ -13,43 +15,58 @@ For the uniqueness-check a **hash** (Java's HashSet implementation) is used. Add
 
 If a combination is an UCC, it is added to the result list and the algorithm proceeds with the next combination in the queue. If not, all successors in the lattice are generated and appended to the queue. For each generated combination it is checked, whether it contains any already detected UCC. In this case the algorithm also proceeds with the next combination since the current one is not minimal.
 
-**_If you used an algorithm from literature, provide a reference to the according publication._**
+&nbsp;
+
+_If you used an algorithm from literature, provide a reference to the according publication._
 
 [Nope.](https://media.giphy.com/media/3og0IwGidh5DYVDnzi/giphy.gif)
 
-**_If you came up with an own approach, provide one or two arguments why it is or could be better than related algorithms._**
+&nbsp;
+
+_If you came up with an own approach, provide one or two arguments why it is or could be better than related algorithms._
 
 We started working at this algorithm right when the exercise was published, so we had no prior knowledge of reference algorithms and just wanted to perform better than the brute force approach.
 
 In retrospective we could have used **Position List Indices** to speed up the uniqueness-check.
 
-**_If your algorithm implements an adaption or optimization of existing approaches, describe these briefly._**
+&nbsp;
+
+_If your algorithm implements an adaption or optimization of existing approaches, describe these briefly._
 
 [Nope.](https://media.giphy.com/media/kGCuRgmbnO9EI/giphy.gif)
 
-**_If you solved a bonus task, please discuss your findings here as well._**
+&nbsp;
+
+_If you solved a bonus task, please discuss your findings here as well._
 
 [Nope.](https://media.giphy.com/media/3oeSAYNUIwvGwl5RRK/giphy.gif)
 
-**_How many unique column combinations did your algorithm find on the provided datasets?_**
+&nbsp;
+
+_How many unique column combinations did your algorithm find on the provided datasets?_
 
 * WDC_planets: **7**
 * WDC_satellites: **4**
 
-**_How long did the discovery take on each dataset and what machine did you use?_**
+&nbsp;
 
-Execution on Metanome with 2048 MB, used macOS Sierra with i5 @ 1.8 GHz. The results are the average run times of five runs.
+_How long did the discovery take on each dataset and what machine did you use?_
 
-* WDC_planets: **69.8 ms**
-* WDC_satellites: **185.2 ms**
+Execution on Metanome with 2048 MB, used macOS Sierra with i5 @ 1.8 GHz. For comparison, we added the runtimes of HyUCC behind our results.
 
-For comparison, HyUCC performs the task on WDC_planets in 63 ms and WDC_satellites in 92 ms.
+* ncvoter: **-- ms** (-- ms), HyUCC aborted after approx. 1h 20 min with Java.lang.OutOfMemoryError, so we did not even try our algorithm
+* ncvoter-1k: **12699 ms** (257 ms)
+* WDC_planets: **69.8 ms** (63 ms)
 
-**_Did you discover any limitations of your approach (e.g. runtime or memory consumption) that made computing a certain dataset impossible?_**
+&nbsp;
 
-[Nope.](https://media.giphy.com/media/W5YVAfSttCqre/giphy.gif)
+_Did you discover any limitations of your approach (e.g. runtime or memory consumption) that made computing a certain dataset impossible?_
 
-**_What is the conceptual differences between NULL ≠ NULL and NULL = NULL and how does the choice of the NULL semantic influence the performance of your algorithm?_**
+With a large dataset (see ncvoter), the memory consumption is too high (even for HyUCC). The execution was aborted after approx. 1h 20 min, so even with enough memory the runtime states a limitation, too.
+
+&nbsp;
+
+_What is the conceptual differences between NULL ≠ NULL and NULL = NULL and how does the choice of the NULL semantic influence the performance of your algorithm?_
 
 As far as we understood, _NULL ≠ NULL_ means that all NULL values are unique, which means that a row of a column combination that contains a NULL value automatically is unique.
 
