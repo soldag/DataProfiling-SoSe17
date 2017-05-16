@@ -1,4 +1,5 @@
 # SUCCESS Documentation
+by Sören Oldag & Tamara Slosarek
 
 **_Describe the algorithm’s basic idea. How does the algorithm cope with the complexity of the given task?_**
 
