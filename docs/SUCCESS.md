@@ -44,7 +44,7 @@ Execution on Metanome with 2048 MB, used macOS Sierra with i5 @ 1.8 GHz. The res
 
 For comparison, HyUCC performs the task on WDC_planets in 63 ms and WDC_satellites in 92 ms.
 
-****_Did you discover any limitations of your approach (e.g. runtime or memory consumption) that made computing a certain dataset impossible?_**
+**_Did you discover any limitations of your approach (e.g. runtime or memory consumption) that made computing a certain dataset impossible?_**
 
 [Nope.](https://media.giphy.com/media/W5YVAfSttCqre/giphy.gif)
 
