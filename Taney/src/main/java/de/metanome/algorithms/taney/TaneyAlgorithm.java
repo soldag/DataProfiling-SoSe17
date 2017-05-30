@@ -1,7 +1,9 @@
 package de.metanome.algorithms.taney;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,7 @@ import de.metanome.algorithm_integration.result_receiver.ColumnNameMismatchExcep
 import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
 import de.metanome.algorithm_integration.result_receiver.FunctionalDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.FunctionalDependency;
+import de.metanome.algorithm_helper.data_structures.ColumnCombinationBitset;
 import de.metanome.algorithm_helper.data_structures.PLIBuilder;
 import de.metanome.algorithm_helper.data_structures.PositionListIndex;
 
@@ -30,7 +33,7 @@ public class TaneyAlgorithm {
 	
 	protected String relationName;
 	protected List<String> columnNames;
-	protected Map<String, PositionListIndex> plis;
+	protected Map<ColumnCombinationBitset, PositionListIndex> plis;
 	
 	public void execute() throws AlgorithmExecutionException {
 		
@@ -42,6 +45,7 @@ public class TaneyAlgorithm {
 	}
 	
 	protected void initialize() throws InputGenerationException, AlgorithmConfigurationException {
+
 		RelationalInput input = this.inputGenerator.generateNewCopy();
 		this.relationName = input.relationName();
 		this.columnNames = input.columnNames();
@@ -49,49 +53,49 @@ public class TaneyAlgorithm {
 	}
 	
 	protected List<FunctionalDependency> generateResults(RelationalInput input) throws InputIterationException {
-		Map<Integer, List<PseudoFunctionalDependency>> results = new HashMap<>();
+
+		Map<ColumnCombinationBitset, List<PseudoFunctionalDependency>> results = new HashMap<>();
 		
-		// Build PLIs for single columns
+		// Build PLIs for single columns and add them to our PLI-map
 		PLIBuilder builder = new PLIBuilder(input);
 		List<PositionListIndex> singletonPlis = builder.getPLIList();
 		for(int i = 0; i < singletonPlis.size(); i++) {
-			this.plis.put(Arrays.toString(new int[] { i }), singletonPlis.get(i));
+			this.plis.put(new ColumnCombinationBitset(i), singletonPlis.get(i));
 		}
 		
 		// Initialize our working queue with the column combinations of size 2 (second layer of the lattice)
-		ArrayDeque<int[]> combinationQueue = new ArrayDeque<>();
+		ArrayDeque<ColumnCombinationBitset> combinationQueue = new ArrayDeque<>();
 		for(int i = 0; i < this.columnNames.size(); i++) {
 			for(int j = i + 1; j < this.columnNames.size(); j++) {
-				combinationQueue.add(new int[] {i, j});
+				combinationQueue.add(new ColumnCombinationBitset(i, j));
 			}
 		}
 		
 		// Iterate over column combinations in the working queue
 		while(combinationQueue.size() > 0) {
-			int[] columnCombination = combinationQueue.pop();
+			ColumnCombinationBitset columnCombination = combinationQueue.pop();
 			
 			// Generate possible FDs
-			for(int rhs: columnCombination) {
-				int[] lhs = Arrays.stream(columnCombination)
-					.filter(column -> column != rhs)
-					.toArray();
+			for(int rhsIndex : columnCombination.getSetBits()) {
+				ColumnCombinationBitset rhs = new ColumnCombinationBitset(rhsIndex);
+				ColumnCombinationBitset lhs = columnCombination.minus(rhs);
 				
 				// TODO: Candidate pruning
 				
 				// Check for functional dependency
-				if(this.isFD(lhs, rhs)) {
+				if(this.isFd(lhs, rhs)) {
 					PseudoFunctionalDependency newFd = new PseudoFunctionalDependency(lhs, rhs);
 					if(results.containsKey(rhs)) {
 						results.get(rhs).add(newFd);
 					}
 					else {
-						results.put(rhs, Arrays.asList(newFd));
+						// Only Array.asList() creates array of fixed size
+						results.put(rhs, new ArrayList<PseudoFunctionalDependency>(Arrays.asList(newFd)));
 					}
 				}
-				
-				this.generatePostCombinations(columnCombination).stream()
-					.forEach(combinationQueue::add);
 			}
+			
+			this.generatePostCombinations(columnCombination).stream().forEach(combinationQueue::add);
 		}
 		
 		// Convert map of LHS and RHS of FDs to functional dependencies
@@ -101,24 +105,29 @@ public class TaneyAlgorithm {
 				.collect(Collectors.toList());
 	}
 	
-	private boolean isFD(int[] lhs, int rhs) {		
-		PositionListIndex lhsPli = this.plis.get(Arrays.toString(lhs));
-		PositionListIndex rhsPli = this.plis.get(Arrays.toString(new int[] { rhs }));
+	private boolean isFd(ColumnCombinationBitset lhs, ColumnCombinationBitset rhs) {		
+		PositionListIndex lhsPli = this.plis.get(lhs);
+		PositionListIndex rhsPli = this.plis.get(rhs);
 		PositionListIndex combinedPli = rhsPli.intersect(lhsPli);
 		
-		int[] combination = IntStream.concat(Arrays.stream(lhs), IntStream.of(rhs)).toArray();
-		this.plis.put(Arrays.toString(combination), combinedPli);
+		// Store combined PLI, we will probably need it later
+		ColumnCombinationBitset combinedColumn = lhs.union(rhs);
+		this.plis.put(combinedColumn, combinedPli);
 		
+		// Partitioning (it's magic!)
 		return lhsPli.getRawKeyError() == combinedPli.getRawKeyError();
 	}
 	
-	private List<int[]> generatePostCombinations(int[] priorColumnIndices) {
-		// Generate new column combinations from given node
-		int maxColumnIndex = priorColumnIndices[priorColumnIndices.length - 1];
-		
+	private List<ColumnCombinationBitset> generatePostCombinations(ColumnCombinationBitset priorColumnCombination) {
+		// Generate the next nodes in lattice
+		int maxColumnIndex = Collections.max(priorColumnCombination.getSetBits());		
 		return IntStream.range(maxColumnIndex + 1, this.columnNames.size())
 			.boxed()
-			.map(columnIndex -> IntStream.concat(Arrays.stream(priorColumnIndices), IntStream.of(columnIndex)).toArray())
+			.map(columnIndex -> {
+				List<Integer> bits = priorColumnCombination.getSetBits();
+				bits.add(columnIndex);
+				return new ColumnCombinationBitset(bits);
+			})
 			.collect(Collectors.toList());
 	}
 	
@@ -133,22 +142,19 @@ public class TaneyAlgorithm {
 	}
 
 	private class PseudoFunctionalDependency {
-		private int[] lhs;
-		private int rhs;
+		ColumnCombinationBitset lhs;
+		ColumnCombinationBitset rhs;
 		
-		public PseudoFunctionalDependency(int[] lhs, int rhs) {
+		public PseudoFunctionalDependency(ColumnCombinationBitset lhs, ColumnCombinationBitset rhs) {
 			this.lhs = lhs;
 			this.rhs = rhs;
 		}
 		
-		public FunctionalDependency materialize(String relationName, List<String> columnNames) {
-			ColumnIdentifier[] lhsIdentifiers = Arrays.stream(this.lhs)
-					.boxed()
-					.map(columnIndex -> new ColumnIdentifier(relationName, columnNames.get(columnIndex)))
-					.toArray(ColumnIdentifier[]::new);		
-			ColumnCombination lhsCombination = new ColumnCombination(lhsIdentifiers);
-			
-			ColumnIdentifier rhsIdentifier = new ColumnIdentifier(relationName, columnNames.get(this.rhs));
+		public FunctionalDependency materialize(String relationName, List<String> columnNames) {		
+			ColumnCombination lhsCombination = lhs.createColumnCombination(relationName, columnNames);
+			// RHS should only have one bit set
+			int rhsIndex = this.rhs.getSetBits().get(0);
+			ColumnIdentifier rhsIdentifier = new ColumnIdentifier(relationName, columnNames.get(rhsIndex));
 			
 			return new FunctionalDependency(lhsCombination, rhsIdentifier);
 		}
