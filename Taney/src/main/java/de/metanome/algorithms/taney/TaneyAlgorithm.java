@@ -49,7 +49,7 @@ public class TaneyAlgorithm {
 	}
 	
 	protected List<FunctionalDependency> generateResults(RelationalInput input) throws InputIterationException {
-		Map<String, PseudoFunctionalDependency> results = new HashMap<>();
+		Map<Integer, List<PseudoFunctionalDependency>> results = new HashMap<>();
 		
 		// Build PLIs for single columns
 		PLIBuilder builder = new PLIBuilder(input);
@@ -70,14 +70,23 @@ public class TaneyAlgorithm {
 		while(combinationQueue.size() > 0) {
 			int[] columnCombination = combinationQueue.pop();
 			
-			// Generate possible fds
+			// Generate possible FDs
 			for(int rhs: columnCombination) {
 				int[] lhs = Arrays.stream(columnCombination)
 					.filter(column -> column != rhs)
 					.toArray();
 				
+				// TODO: Candidate pruning
+				
+				// Check for functional dependency
 				if(this.isFD(lhs, rhs)) {
-					results.put(Arrays.toString(lhs), new PseudoFunctionalDependency(lhs, rhs));
+					PseudoFunctionalDependency newFd = new PseudoFunctionalDependency(lhs, rhs);
+					if(results.containsKey(rhs)) {
+						results.get(rhs).add(newFd);
+					}
+					else {
+						results.put(rhs, Arrays.asList(newFd));
+					}
 				}
 				
 				this.generatePostCombinations(columnCombination).stream()
@@ -85,8 +94,9 @@ public class TaneyAlgorithm {
 			}
 		}
 		
-		// Convert map of lhs and rhs of fds to functional dependencies
+		// Convert map of LHS and RHS of FDs to functional dependencies
 		return results.values().stream()
+				.flatMap(pseudoFds -> pseudoFds.stream())
 				.map(pseudoFd -> pseudoFd.materialize(this.relationName, this.columnNames))
 				.collect(Collectors.toList());
 	}
@@ -103,8 +113,7 @@ public class TaneyAlgorithm {
 	}
 	
 	private List<int[]> generatePostCombinations(int[] priorColumnIndices) {
-		// Generate new column combinations from given node.
-		// Combinations already in the result are handled directly in generateResult().
+		// Generate new column combinations from given node
 		int maxColumnIndex = priorColumnIndices[priorColumnIndices.length - 1];
 		
 		return IntStream.range(maxColumnIndex + 1, this.columnNames.size())
