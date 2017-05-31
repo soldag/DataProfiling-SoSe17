@@ -3,11 +3,11 @@ by Sören Oldag & Tamara Slosarek
 
 &nbsp;
 
-Taney (tiny TANE) is an algorithm that finds the valid, minimal functional dependencies (FDs) of a data set.
+Taney (tiny TANE [1]) is an algorithm that finds the valid, minimal functional dependencies (FDs) of a data set.
 
 ## Algorithm
 
-Taney uses partitioning and a bottom-up a priori approach with candidate pruning, which among others are used by TANE [1].
+Taney uses partitioning and a bottom-up a priori approach with candidate pruning.
 
 ### Partitioning
 
@@ -17,22 +17,32 @@ For the implementation we used the PLIs from the Metanome algorithm helpers, sin
 
 ### A Priori with Candidate Pruning
 
-* ...
+Each node of the lattice represents all possible columns X for the FD. By that, we only allow non-trivial FDs, since for a column A chosen as the right-hand side of the FD (RHS), its left-hand side (LHS) is X\\A.
+
+The lattice is traversed bottom-up. To assure minimal FDs, candidate pruning is used: A rule X\\B → B is not minimal and does not need to be checked when there is already a FD Y\\B → B with Y ⊂ X.
+
+_Is our pruning the same as the one of TANE?_
+_Add candidate map to not excllude candidates on the fly?_
 
 [1] Huhtala, Ykä, et al. "TANE: An efficient algorithm for discovering functional and approximate dependencies." _The computer journal_ 42.2 (1999): 100-111.
 
 ## Experiments
 
 Used machine: Windows 10, 8 GB RAM, Intel Core i7 @ 2.40 GHz
-Metanome settings: 2048 MB
+
+Metanome settings: 2048 MB (6144 MB for letter)
+
+All runtimemeasurements are averages from three runs.
 
 | Dataset       | Columns | Rows   | Size   | FDs     | Found FDs | Runtime FUN | Runtime TANE | Runtime taney |
 |---------------|---------|--------|--------|---------|-----------|-------------|--------------|---------------|
-| iris          | 5       | 150    | 5 KB   | 4       |           |             |              |               |
-| balance-scale | 5       | 625    | 7 KB   | 1       |           |             |              |               |
-| chess         | 7       | 28.056 | 519 KB | 1       |           |             |              |               |
-| letter        | 16      | 20.000 | 695 KB | 61      |           |             |              |               |
-| flight_1k     | 109     | 1.000  | 575 KB | 982.631 |           |             |              |               |
+| iris          | 5       | 150    | 5 KB   | 4       |           | 40 ms       | 240 ms       |               |
+| balance-scale | 5       | 625    | 7 KB   | 1       |           | 61 ms       | 255 ms       |               |
+| chess         | 7       | 28.056 | 519 KB | 1       |           | 155 ms      | 500 ms       |               |
+| bridges       | 13      | 108    | 6 KB   | 142     |           | 380 ms      | 543 ms       |               |
+| letter        | 16      | 20.000 | 695 KB | 61      | -         | Error (*)   | Error (*)    |               |
+
+(*) OutOfMemoryError: GC overhead limit exceeded
 
 _Did you discover any limitations of your approach (e.g. runtime or memory consumption)
 that made computing a certain dataset impossible?_
