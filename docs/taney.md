@@ -11,7 +11,9 @@ Taney uses partitioning and a bottom-up a priori approach with candidate pruning
 
 ### Partitioning
 
-The partitioning step considers the distinct values (partitions, equivalence classes) of a column combination. If every partition π_X of one column combination X is a subset of some partition π_A of column A, π_X refines π_A. If π_X refines π_A, X depends A functionally. Since partitions of size one cannot violate any functional dependency, they can be ignored. Then the key error has to be used, which states the number of tuples to be removed for a column combination to be key.
+The partitioning step considers the distinct values (partitions, equivalence classes) of a column combination. If every partition π<sub>X</sub> of one column combination X is a subset of some partition π<sub>A</sub> of column A, π<sub>X</sub> refines π<sub>A</sub>. If π<sub>X</sub> refines π<sub>A</sub>, A depends functionally on X.
+
+Since partitions of size one cannot violate any functional dependency, they can be ignored. Then the key error has to be used, which states the number of tuples to be removed for a column combination to be key.
 
 For the implementation we used the PLIs from the Metanome algorithm helpers, since they exactly describe the behavior of stripped partitions and already implement the needed functions intersect() and getRawKeyError().
 
