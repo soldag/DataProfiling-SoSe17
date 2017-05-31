@@ -76,11 +76,20 @@ public class TaneyAlgorithm {
 			ColumnCombinationBitset columnCombination = combinationQueue.pop();
 			
 			// Generate possible FDs
+			generateFds:
 			for(int rhsIndex : columnCombination.getSetBits()) {
 				ColumnCombinationBitset rhs = new ColumnCombinationBitset(rhsIndex);
 				ColumnCombinationBitset lhs = columnCombination.minus(rhs);
 				
-				// TODO: Candidate pruning
+				// Candidate pruning -- discard if LHS has subset in results for RHS
+				if(results.containsKey(rhs)) {
+					for(PseudoFunctionalDependency foundFd : results.get(rhs)) {
+						if(lhs.containsSubset(foundFd.lhs)) {
+							createCombinedPli(lhs, rhs);
+							break generateFds;
+						}
+					}
+				} 
 				
 				// Check for functional dependency
 				if(this.isFd(lhs, rhs)) {
@@ -107,15 +116,21 @@ public class TaneyAlgorithm {
 	
 	private boolean isFd(ColumnCombinationBitset lhs, ColumnCombinationBitset rhs) {		
 		PositionListIndex lhsPli = this.plis.get(lhs);
-		PositionListIndex rhsPli = this.plis.get(rhs);
-		PositionListIndex combinedPli = rhsPli.intersect(lhsPli);
-		
-		// Store combined PLI, we will probably need it later
-		ColumnCombinationBitset combinedColumn = lhs.union(rhs);
-		this.plis.put(combinedColumn, combinedPli);
+		PositionListIndex combinedPli = createCombinedPli(lhs, rhs);
 		
 		// Partitioning (it's magic!)
 		return lhsPli.getRawKeyError() == combinedPli.getRawKeyError();
+	}
+	
+	private PositionListIndex createCombinedPli(ColumnCombinationBitset lhs, ColumnCombinationBitset rhs) {
+		PositionListIndex lhsPli = this.plis.get(lhs);
+		PositionListIndex rhsPli = this.plis.get(rhs);
+		PositionListIndex combinedPli = rhsPli.intersect(lhsPli);
+		ColumnCombinationBitset combinedColumn = lhs.union(rhs);
+
+		// Store combined PLI, we will probably need it later
+		this.plis.put(combinedColumn, combinedPli);
+		return combinedPli;
 	}
 	
 	private List<ColumnCombinationBitset> generatePostCombinations(ColumnCombinationBitset priorColumnCombination) {
