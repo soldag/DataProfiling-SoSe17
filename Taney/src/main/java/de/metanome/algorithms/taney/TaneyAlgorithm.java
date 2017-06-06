@@ -81,12 +81,12 @@ public class TaneyAlgorithm {
 				ColumnCombinationBitset rhs = new ColumnCombinationBitset(rhsIndex);
 				ColumnCombinationBitset lhs = columnCombination.minus(rhs);
 				
-				// Candidate pruning -- discard if LHS has subset in results for RHS
+				// Pruning -- discard if LHS has subset in results for RHS
 				if(results.containsKey(rhs)) {
 					for(PseudoFunctionalDependency foundFd : results.get(rhs)) {
 						if(lhs.containsSubset(foundFd.lhs)) {
 							createCombinedPli(lhs, rhs);
-							break generateFds;
+							continue generateFds;
 						}
 					}
 				} 
