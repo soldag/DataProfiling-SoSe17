@@ -36,7 +36,8 @@ public class Spidey extends SpideyAlgorithm 							// Separating the algorithm i
 	@Override
 	public ArrayList<ConfigurationRequirement<?>> getConfigurationRequirements() { // Tells Metanome which and how many parameters the algorithm needs
 		ArrayList<ConfigurationRequirement<?>> conf = new ArrayList<>();
-		conf.add(new ConfigurationRequirementRelationalInput(Spidey.Identifier.INPUT_GENERATOR.name()));
+		conf.add(new ConfigurationRequirementRelationalInput(Spidey.Identifier.INPUT_GENERATOR.name(),
+			ConfigurationRequirement.ARBITRARY_NUMBER_OF_VALUES));
 		
 		return conf;
 	}
