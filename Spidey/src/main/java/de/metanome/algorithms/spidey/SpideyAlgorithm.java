@@ -121,11 +121,10 @@ public class SpideyAlgorithm {
 		
 		// Convert refs to list of inclusion dependencies
 		List<InclusionDependency> results = new ArrayList<InclusionDependency>();
-		for (int columnIndex: columnIndices) {
-			Set<Integer> ref = refList.get(columnIndex);
-			if (!ref.isEmpty()) {
-				ColumnPermutation dependant = this.createColumnPermutation(columnIndex);
-				ColumnPermutation referenced = this.createColumnPermutation(ref.toArray(new Integer[ref.size()]));
+		for (int dependantIndex: columnIndices) {
+			for(int referencedIndex: refList.get(dependantIndex)) {
+				ColumnPermutation dependant = this.createColumnPermutation(dependantIndex);
+				ColumnPermutation referenced = this.createColumnPermutation(referencedIndex);
 				results.add(new InclusionDependency(dependant, referenced));
 			}
 		}
