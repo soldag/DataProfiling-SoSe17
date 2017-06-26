@@ -1,6 +1,8 @@
 package de.metanome.algorithms.spidey;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,23 +23,18 @@ import de.metanome.algorithm_integration.result_receiver.ColumnNameMismatchExcep
 import de.metanome.algorithm_integration.result_receiver.CouldNotReceiveResultException;
 import de.metanome.algorithm_integration.result_receiver.InclusionDependencyResultReceiver;
 import de.metanome.algorithm_integration.results.InclusionDependency;
-import de.metanome.algorithm_helper.data_structures.ColumnCombinationBitset;
-import de.metanome.algorithm_helper.data_structures.PositionListIndex;
 
 public class SpideyAlgorithm {
 
-	protected RelationalInputGenerator inputGenerator = null;
+	protected RelationalInputGenerator[] inputGenerators = null;
 	protected InclusionDependencyResultReceiver resultReceiver = null;
 
-	protected String relationName;
-	protected List<String> columnNames;
-	protected Map<ColumnCombinationBitset, PositionListIndex> plis;
+	protected List<RelationalInput> inputs;
+	protected List<String> relationNames;
+	protected List<List<String>> columnNames;
 
 	public void execute() throws AlgorithmExecutionException {
-
-		this.initialize();
-		List<List<String>> records = this.readInput();
-		List<InclusionDependency> results = this.generateResults(records);
+		System.out.println("Starting your friendly neighborhood IND algorithm.");
 		System.out.println("       :");
 		System.out.println("       ;");
 		System.out.println("      :");
@@ -48,60 +45,49 @@ public class SpideyAlgorithm {
 		System.out.println("     \\");
 		System.out.println("     /");
 		System.out.println("     `");
-		System.out.println(results);
+		
+		this.initialize();
+		List<InclusionDependency> results = this.generateResults();
 		this.emit(results);
+		System.out.println(results);
 	}
 
-	protected void initialize() throws InputGenerationException, AlgorithmConfigurationException {
-		RelationalInput input = this.inputGenerator.generateNewCopy();
-		this.relationName = input.relationName();
-		this.columnNames = input.columnNames();
-	}
-	
-	protected List<List<String>> readInput() throws InputGenerationException, AlgorithmConfigurationException, InputIterationException {
-		List<List<String>> records = new ArrayList<>();
-		RelationalInput input = this.inputGenerator.generateNewCopy();
-		while (input.hasNext())
-			records.add(input.next());
-		return records;
-	}
-	
-	protected void print(List<List<String>> records) {		
-		// Print schema
-		System.out.print(this.relationName + "( ");
-		for (String columnName : this.columnNames)
-			System.out.print(columnName + " ");
-		System.out.println(")");
+	protected void initialize() throws InputGenerationException, AlgorithmConfigurationException {		
+		this.inputs = new ArrayList<>(this.inputGenerators.length);
+		this.relationNames = new ArrayList<>(this.inputGenerators.length);
+		this.columnNames = new ArrayList<>(this.inputGenerators.length);
 		
-		// Print records
-		for (List<String> record : records) {
-			System.out.print("| ");
-			for (String value : record)
-				System.out.print(value + " | ");
-			System.out.println();
+		for (RelationalInputGenerator inputGenerator : this.inputGenerators) {
+			RelationalInput input = inputGenerator.generateNewCopy();
+			this.inputs.add(input);
+			this.relationNames.add(input.relationName());
+			this.columnNames.add(input.columnNames());
 		}
 	}
 
-	protected List<InclusionDependency> generateResults(List<List<String>> input) throws InputIterationException {
-		// TODO: Check what happens for multiple input files
+	protected List<InclusionDependency> generateResults() throws InputIterationException {
 		// Initialize priority queues and refs for columns
 		List<PriorityQueue<String>> sortedColumns = new ArrayList<PriorityQueue<String>>();
-		List<Set<Integer>> refList = new ArrayList<Set<Integer>>();
-		Set<Integer> allColumns = IntStream.range(0, this.columnNames.size()).boxed().collect(Collectors.toSet());
-		for (int i = 0; i < this.columnNames.size(); i++) {
+		List<Set<Integer>> refList = new ArrayList<Set<Integer>>();		
+		int globalColumnsCount = IntStream.range(0, this.relationNames.size()).map(i -> this.columnNames.get(i).size()).sum();
+		Set<Integer> columnIndices = IntStream.range(0, globalColumnsCount).boxed().collect(Collectors.toSet());
+		for (int i = 0; i < globalColumnsCount; i++) {
 			sortedColumns.add(new PriorityQueue<String>());
 			int columnIndex = i; // otherwise there will be scope problems
-			refList.add(allColumns.stream().filter(item -> item != columnIndex).collect(Collectors.toSet()));
+			refList.add(columnIndices.stream().filter(item -> item != columnIndex).collect(Collectors.toSet()));
 		}
 
 		// Fill priority queues
-		for (List<String> row : input) {
-			for (int i = 0; i < row.size(); i++) {
-				PriorityQueue<String> currentColumn = sortedColumns.get(i);
-				String currentValue = row.get(i);
-				// TODO: Is "" correct representations of null?
-				if (!currentColumn.contains(currentValue) && currentValue != "") {
-					currentColumn.add(currentValue);
+		for(int i = 0; i < this.inputs.size(); i++) {
+			RelationalInput input = this.inputs.get(i);
+			while (input.hasNext()) {
+				List<String> row = input.next();
+				for (int j = 0; j < row.size(); j++) {
+					String currentValue = row.get(j);
+					PriorityQueue<String> currentSortedColumn = sortedColumns.get(this.getGlobalColumnIndex(i, j));
+					if (!currentSortedColumn.contains(currentValue) && currentValue != null) {
+						currentSortedColumn.add(currentValue);
+					}
 				}
 			}
 		}
@@ -117,9 +103,9 @@ public class SpideyAlgorithm {
 				.min(String.CASE_INSENSITIVE_ORDER)
 				.get();
 			Set<Integer> attributesToProcess = new HashSet<Integer>();
-			for (Integer columnIndex : allColumns) {
+			for (Integer columnIndex : columnIndices) {
 				PriorityQueue<String> current = sortedColumns.get(columnIndex);
-				if (String.valueOf(current.peek()).equals(minValue)) {
+				if (!current.isEmpty() && current.peek().equals(minValue)) { // TODO String.valueof() needed?
 					attributesToProcess.add(columnIndex);
 					current.remove();
 					if (current.isEmpty()) {
@@ -134,23 +120,55 @@ public class SpideyAlgorithm {
 		
 		// Convert refs to list of inclusion dependencies
 		List<InclusionDependency> results = new ArrayList<InclusionDependency>();
-		for (int i = 0; i < refList.size(); i++) {
-			Set<Integer> ref = refList.get(i);
+		for (int columnIndex: columnIndices) {
+			Set<Integer> ref = refList.get(columnIndex);
 			if (!ref.isEmpty()) {
-				ColumnPermutation dependant = this.createColumnPermutation(i);
+				ColumnPermutation dependant = this.createColumnPermutation(columnIndex);
 				ColumnPermutation referenced = this.createColumnPermutation(ref.toArray(new Integer[ref.size()]));
 				results.add(new InclusionDependency(dependant, referenced));
 			}
 		}
+		
 		return results;
 	}
 	
-	private ColumnPermutation createColumnPermutation(Integer... columnIndices) {
-		ColumnIdentifier[] columnIdentifiers = new ColumnIdentifier[columnIndices.length];
-		for (int i = 0; i < columnIndices.length; i++) {
-			// TODO: Does columnNames break with multiple input files?
-			columnIdentifiers[i] = new ColumnIdentifier(this.relationName, this.columnNames.get(columnIndices[i]));
+	private int getGlobalColumnIndex(int inputIndex, int columnIndex) {
+		return IntStream.range(0, inputIndex).map(i -> this.inputs.get(i).columnNames().size()).sum() + columnIndex;
+	}
+	
+	private String[] getRelationColumnName(int globalColumnIndex) {
+		// Get relation name
+		int startIndex = 0;
+		int relationIndex = -1;
+		for(int i = 0; i< this.relationNames.size(); i++) {
+			relationIndex = i;
+			
+			int newStartIndex = startIndex + this.columnNames.get(i).size();
+			if(newStartIndex > globalColumnIndex) {
+				break;
+			}
+			else {
+				startIndex = newStartIndex;
+			}
 		}
+		
+		// Get column name
+		if(relationIndex >= 0) {
+			int columnIndex = globalColumnIndex - startIndex;
+			String relationName = this.relationNames.get(relationIndex);
+			String columnName = this.columnNames.get(relationIndex).get(columnIndex);
+			
+			return new String[] {relationName, columnName};
+		}
+		
+		return null;
+	}
+	
+	private ColumnPermutation createColumnPermutation(Integer... columnIndices) {
+		ColumnIdentifier[] columnIdentifiers = Arrays.stream(columnIndices)
+				.map(globalIndex -> this.getRelationColumnName(globalIndex))
+				.map(relationColumnNames -> new ColumnIdentifier(relationColumnNames[0], relationColumnNames[1]))
+				.toArray(ColumnIdentifier[]::new);
 		return new ColumnPermutation(columnIdentifiers);
 	}
 
