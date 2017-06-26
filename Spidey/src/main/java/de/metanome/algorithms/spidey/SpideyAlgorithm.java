@@ -113,8 +113,9 @@ public class SpideyAlgorithm {
 					};
 				}
 			}
-			for (Set<Integer> refs : refList) {
-				// TODO: Remove from refs
+			
+			for(int columnIndex: attributesToProcess) {
+				refList.get(columnIndex).retainAll(attributesToProcess);
 			}
 		}
 		
