@@ -105,7 +105,7 @@ public class SpideyAlgorithm {
 			Set<Integer> attributesToProcess = new HashSet<Integer>();
 			for (Integer columnIndex : columnIndices) {
 				PriorityQueue<String> current = sortedColumns.get(columnIndex);
-				if (!current.isEmpty() && current.peek().equals(minValue)) { // TODO String.valueof() needed?
+				if (!current.isEmpty() && current.peek().equals(minValue)) {
 					attributesToProcess.add(columnIndex);
 					current.remove();
 					if (current.isEmpty()) {

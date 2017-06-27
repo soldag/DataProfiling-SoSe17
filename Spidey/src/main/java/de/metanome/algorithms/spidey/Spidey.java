@@ -26,7 +26,7 @@ public class Spidey extends SpideyAlgorithm 							// Separating the algorithm i
 
 	@Override
 	public String getDescription() {
-		return "An IND algorithm returning unary inclusion dependencies"; // A string briefly describing what this algorithm does
+		return "Your friendly neighborhood IND algorithm"; // A string briefly describing what this algorithm does
 	}
 	
 	@Override
